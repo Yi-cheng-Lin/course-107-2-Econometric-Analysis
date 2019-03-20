@@ -54,8 +54,9 @@ data("Journals")
 # 資料處理：產生新變數 dplyr::mutate
 
 ```{r ch2-summary, results='hide'}
-
-
+Journals %>% mutate(citeprice=price/citations) -> journals
+summary(journals)
+data("Journals%citeprice")
 ```
 
 # 因果問句
@@ -63,12 +64,20 @@ data("Journals")
 > 期刊的價格(citeprice，平均文獻引用價格)如何影響其圖書館訂閱量(subs)? 
 
 ```{r ols-paircorr-r, echo=TRUE}
-
+library(psych)
+journals %>% 
+  select(citeprice,subs) %>%
+  pairs.panels()
+```
+```{r}
 ```
 
 
 ```{r ols-paircorr2-r}
-
+journals %>% 
+  select(citeprice,subs) %>%
+  mutate_all(log) %>%
+  pairs.panels()
 ```
 
 > 為什麼取log後，兩者的相關度變高？它表示兩個變數變得更不獨立嗎？
@@ -86,7 +95,15 @@ data("Journals")
 
 ```{r ols-paircoor3-r, results='hide'}
 
+# 判斷變數是否為數值類別
+is_numeric<-function(x) all(is.numeric(x))
+# 計算數數與citeprice的相關係數
+cor_citeprice<-function(x) cor(x,journals$citeprice)
 
+journals %>%  
+  select_if(is_numeric) %>%
+  summarise_all(cor_citeprice) %>%
+  kable()
 ```
 
 > 期刊越重要，其引用次數越高，因此高引用次數的期刊，你認為它在「低價格下的訂閱數」（立足點）會比較高還是低？
@@ -96,7 +113,16 @@ data("Journals")
 # 複迴歸模型
 
 ```{r}
+journals %>% 
+  lm(log(subs)~log(citeprice),data=.) -> model1
 
+journals %>%
+  lm(log(subs)~log(citeprice)+foundingyear,data=.) -> model2
+
+library(broom)
+tidy(model1)
+augment(model1)
+glance(model1)
 
 ```
 
